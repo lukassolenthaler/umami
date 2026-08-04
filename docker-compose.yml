@@ -1,28 +1,30 @@
----
 services:
   umami:
     image: ghcr.io/umami-software/umami:latest
     ports:
-      - "3030:3030"
+      - "3030:3000"
     environment:
-      DATABASE_URL: postgresql://umami:umami%sg_j2h3@db:5432/umami
-      APP_SECRET: replace-me-with-a-random-string
+      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@db:5432/umami
+      APP_SECRET: ${APP_SECRET}
     depends_on:
       db:
         condition: service_healthy
     init: true
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:3030/api/heartbeat"]
+      test: ["CMD-SHELL", "curl http://localhost:3000/api/heartbeat"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
+      - proxy
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: umami
       POSTGRES_USER: umami
-      POSTGRES_PASSWORD: umami%sg_j2h3
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - umami-db-data:/var/lib/postgresql/data
     restart: always
@@ -31,8 +33,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
+
 volumes:
   umami-db-data:
+
 networks:
   internal:
     driver: bridge
